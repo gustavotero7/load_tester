@@ -1,0 +1,12 @@
+timeout: 2
+requests: 100
+concurrency: 10
+targets:
+- url: https://google.com
+  method: GET
+- url: http://api.example.com
+  method: POST
+  payload: '{"ping":"pong"}'
+  header:
+    Authorization: Basic 2321321321312312
+    Ping: pong
