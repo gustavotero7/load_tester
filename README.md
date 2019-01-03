@@ -9,7 +9,7 @@ Load tester uses a file called conf.yml in the same location as the binary
 * timeout: Default timeout for http request
 * requests: Total requests to be made for each target
 * concurrency: Concurrent calls count for each target, for instance, if you set concurrency to 10 the load tester will have 10 concurrent calls for each target, so if you have 3 targets the load tester will have 30 concurrent calls running
-* targets: Target hosts to test
+* targets: Target hosts to test, you must set a target name as key
   * url: Host address
   * method: http method
   * payload: request body
@@ -20,14 +20,16 @@ timeout: 2
 requests: 100
 concurrency: 10
 targets:
-- url: https://google.com
-  method: GET
-- url: http://api.example.com
-  method: POST
-  payload: '{"ping":"pong"}'
-  header:
-    Authorization: Basic 2321321321312312
-    Ping: pong
+  target_key_name:
+    url: https://google.com
+    method: GET
+  other_target_key_name:
+    url: http://api.example.com
+    method: POST
+    payload: '{"ping":"pong"}'
+    header:
+      Authorization: Basic 2321321321312312
+      Ping: pong
 
 ```
 

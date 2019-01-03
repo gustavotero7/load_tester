@@ -11,7 +11,7 @@ type Conf struct {
 	Timeout     int
 	Requests    int
 	Concurrency int
-	Targets     []*Target
+	Targets     map[string]*Target
 }
 
 // Target _
@@ -20,24 +20,24 @@ type Target struct {
 	Method  string
 	Payload string
 	Header  map[string]string
-	Result  Result `yaml:"-"`
+	Results Results `yaml:"-"`
 }
 
 // AddResultStatus _
 func (t *Target) AddResultStatus(status string) {
-	if t.Result.Status == nil {
-		t.Result.Status = map[string]int{status: 1}
+	if t.Results.Status == nil {
+		t.Results.Status = map[string]int{status: 1}
 		return
 	}
-	if _, ok := t.Result.Status[status]; !ok {
-		t.Result.Status[status] = 1
+	if _, ok := t.Results.Status[status]; !ok {
+		t.Results.Status[status] = 1
 		return
 	}
-	t.Result.Status[status]++
+	t.Results.Status[status]++
 }
 
-// Result _
-type Result struct {
+// Results _
+type Results struct {
 	Status   map[string]int
 	Failures int
 	Total    int
