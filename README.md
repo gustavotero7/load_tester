@@ -33,8 +33,14 @@ targets:
 
 ```
 
+By default the load tester will look for a file named `conf.yml` but you can specify another file using `-c` flag
+
 ## Run
 
 Open your bash/terminal and just run the downloaded binary, don't forget to place the config.yml file in the same location as the binary before running the load tester
 
 `./load_tester`
+
+Or with a custom config file
+
+`./load_tester -c customConf.yml`
