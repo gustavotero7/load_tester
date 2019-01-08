@@ -41,6 +41,10 @@ type Results struct {
 	Status   map[string]int
 	Failures int
 	Total    int
+	TestTime float64
+	AvgTime  float64
+	MinTime  float64
+	MaxTime  float64
 }
 
 // ToYAML _

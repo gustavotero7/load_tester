@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,6 +20,7 @@ type Result struct {
 	Key  string
 	Err  error
 	Code int
+	Took float64
 }
 
 func main() {
@@ -76,6 +78,7 @@ func main() {
 						fmt.Println("Call to", v.URL)
 						fmt.Println("Success", res.StatusCode, "/ Took:", time.Since(took).Seconds(), "Seconds")
 					}
+					rs.Took = time.Since(took).Seconds()
 					cn <- rs
 				}(k, *t)
 			}
@@ -93,19 +96,41 @@ func main() {
 			} else {
 				c.Targets[rs.Key].AddResultStatus(fmt.Sprintf("%d : %s", rs.Code, http.StatusText(rs.Code)))
 			}
+
+			// Check request time
+			c.Targets[rs.Key].Results.TestTime += rs.Took
+			if c.Targets[rs.Key].Results.MinTime > 0 && c.Targets[rs.Key].Results.MaxTime > 0 {
+				if rs.Took < c.Targets[rs.Key].Results.MinTime {
+					c.Targets[rs.Key].Results.MinTime = rs.Took
+				}
+
+				if rs.Took > c.Targets[rs.Key].Results.MaxTime {
+					c.Targets[rs.Key].Results.MaxTime = rs.Took
+				}
+			} else {
+				c.Targets[rs.Key].Results.MinTime = rs.Took
+				c.Targets[rs.Key].Results.MaxTime = rs.Took
+			}
 		}
 	}
 
 	//return
 	header := map[string]struct{}{
-		"Test":  struct{}{},
-		"Total": struct{}{},
+		"Test":    struct{}{},
+		"Total":   struct{}{},
+		"MinTime": struct{}{},
+		"MaxTime": struct{}{},
+		"AvgTime": struct{}{},
 	}
 	rows := []map[string]string{}
 	for tk, t := range c.Targets {
+		log.Println("Test Time", t.Results.TestTime)
 		row := map[string]string{}
 		row["Test"] = tk
 		row["Total"] = fmt.Sprintf("%v", t.Results.Total)
+		row["MinTime"] = fmt.Sprintf("%.2f s", t.Results.MinTime)
+		row["MaxTime"] = fmt.Sprintf("%.2f s", t.Results.MaxTime)
+		row["AvgTime"] = fmt.Sprintf("%.2f s", t.Results.TestTime/float64(t.Results.Total))
 		for k, v := range t.Results.Status {
 			// Save all possible results to use them as headers
 			header[k] = struct{}{}
