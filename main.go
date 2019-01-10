@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,16 +18,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Response _
+type Response struct {
+	Status string
+	Body   json.RawMessage
+	Header http.Header
+}
+
 // Result _
 type Result struct {
-	Key  string
-	Err  error
-	Code int
-	Took float64
+	Key      string
+	Err      error
+	Code     int
+	Took     float64
+	Response Response
 }
 
 func main() {
 	cPath := flag.String("c", "conf.yml", "Config file")
+	rPath := flag.String("o", "", "Path/File name to store results in JSON format EX: load_tester -o myResults.json")
 	flag.Parse()
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		PrettyPrint:      true,
@@ -50,7 +62,12 @@ func main() {
 					client := http.Client{
 						Timeout: time.Second * time.Duration(c.Timeout),
 					}
-					req, err := http.NewRequest(v.Method, v.URL, strings.NewReader(v.Payload))
+
+					var reader io.Reader
+					if len(v.Payload) > 0 {
+						reader = strings.NewReader(v.Payload)
+					}
+					req, err := http.NewRequest(v.Method, v.URL, reader)
 					if err != nil {
 						panic(err)
 					}
@@ -72,14 +89,22 @@ func main() {
 							rs.Err = errors.New(strings.Replace(err.Error(), v.URL, "", -1))
 						}
 						fmt.Println("Fail: ", err)
-
 					} else {
 						rs.Code = res.StatusCode
 						fmt.Println("Call to", v.URL)
 						fmt.Println("Success", res.StatusCode, "/ Took:", time.Since(took).Seconds(), "Seconds")
 					}
+
+					if res != nil {
+						if res.Body != nil {
+							json.NewDecoder(res.Body).Decode(&rs.Response.Body)
+						}
+						rs.Response.Header = res.Header
+						rs.Response.Status = res.Status
+					}
 					rs.Took = time.Since(took).Seconds()
 					cn <- rs
+
 				}(k, *t)
 			}
 		}
@@ -111,10 +136,21 @@ func main() {
 				c.Targets[rs.Key].Results.MinTime = rs.Took
 				c.Targets[rs.Key].Results.MaxTime = rs.Took
 			}
+
+			// Store response
+			c.Targets[rs.Key].Results.Responses = append(c.Targets[rs.Key].Results.Responses, rs.Response)
+
 		}
 	}
 
-	//return
+	// Store results only if a results file path is provided
+	if *rPath != "" {
+		// Store/Write responses
+		bts, _ := json.Marshal(c.Targets)
+		ioutil.WriteFile(*rPath, bts, 777)
+	}
+
+	// Render results
 	header := map[string]struct{}{
 		"Test":    struct{}{},
 		"Total":   struct{}{},

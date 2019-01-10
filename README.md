@@ -44,3 +44,7 @@ Open your bash/terminal and just run the downloaded binary, don't forget to plac
 Or with a custom config file
 
 `./load_tester -c customConf.yml`
+
+Now you can also specify an output file to store all requests responses, use `-o` flag for that
+
+`./load_tester -o results.json`
